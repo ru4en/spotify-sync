@@ -1,0 +1,76 @@
+data
+playlists
+.cache
+
+# Python bytecode files
+*.pyc
+*.pyo
+__pycache__/
+
+# Virtual environment directories
+venv/
+env/
+.venv/
+.env
+
+# Distribution / packaging
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# IDE / Editor directories and settings
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Python logs
+*.log
+
+# Tests and coverage reports
+*.coveragerc
+.coverage
+.tox/
+.nox/
+*.hypothesis/
+.coverage.*
+
+# PyInstaller
+#  Typically this would be used if you're packaging your app with PyInstaller.
+#  Uncomment to ignore PyInstaller's build directory.
+# build/
+# dist/
+# *.spec
+
+# Django stuff
+*.log
+local_settings.py
+db.sqlite3
+media/
+static/
+
+# Flask stuff
+instance/
+.webassets-cache
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# pytest
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+
+# PyCharm
+.idea/
+
+# VSCode
+.vscode/

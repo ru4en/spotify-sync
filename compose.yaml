@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  spotify-sync:
+    build: .
+    container_name: spotify-sync
+    ports:
+      - "8081:8080"
+    volumes:
+      - ./data:/app/data
+      - /home/ru4en/media/songs/playlists:/app/playlists
+    env_file: .env
+    labels:
+      traefik.enable: true
+      traefik.http.services.spotify-sync.loadbalancer.server.port: 8080
+      traefik.http.services.spotify-sync.loadbalancer.server.scheme: http
+
+  # HTTP Router
+      traefik.http.routers.spotify-sync-http.entrypoints: 'web'
+      traefik.http.routers.spotify-sync-http.rule: 'Host(`spotify-sync.ditto.rlab.uk`) || Host(`spotify-sync.rlab.uk`)'
+
+  # HTTPS Router
+      traefik.http.routers.spotify-sync-https.entrypoints: 'websecure'
+      traefik.http.routers.spotify-sync-https.rule: 'Host(`spotify-sync.ditto.rlab.uk`) || Host(`spotify-sync.rlab.uk`)'
+      traefik.http.routers.spotify-sync-https.tls: true
+      traefik.http.routers.spotify-sync-https.tls.certresolver: cloudflare
+
+    networks:
+      - frontend
+      - backend
+networks:
+  frontend:
+    external: true
+  backend:
+    external: true
+
