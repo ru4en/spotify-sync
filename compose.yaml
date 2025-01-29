@@ -28,6 +28,13 @@ services:
     networks:
       - frontend
       - backend
+
+    develop:
+        watch:
+          - action: rebuild
+            path: ./src
+            target: /app
+
 networks:
   frontend:
     external: true

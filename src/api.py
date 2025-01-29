@@ -1,40 +1,6 @@
-import os
-import json
-import logging
-import time
-import asyncio
-import urllib.request
-from typing import List
-from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, HTTPException, WebSocket, BackgroundTasks, WebSocketDisconnect
-from fastapi.responses import FileResponse, RedirectResponse
-from fastapi.middleware.cors import CORSMiddleware
-from spotipy.oauth2 import SpotifyOAuth
-from spotify import get_spotify_client, OAuthHandler
-from youtube import YouTubeDownloader
+from fastapi import FastAPI, HTTPException
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="ui"), name="static")
-
-active_connections: List[WebSocket] = []
-
-
-# Environment variables with default values and error handling
-HOST = os.getenv("HOST", "localhost")
-PORT = int(os.getenv("PORT", 8080))
-PROTOCOL = os.getenv("PROTOCOL", "http")
-CLIENT_ID = os.getenv("SPOTIPY_CLIENT_ID")
-CLIENT_SECRET = os.getenv("SPOTIPY_CLIENT_SECRET")
-REDIRECT_URI = os.getenv('REDIRECT_URI', 'https://spotify-sync.ditto.rlab.uk/callback')
-DATA_DIR = os.getenv("DATA_DIR", "data")
-PLAYLISTS_DIR = os.getenv("PLAYLISTS_DIR", "playlists")
-
-# Logger setup
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-if not CLIENT_ID or not CLIENT_SECRET:
-    raise RuntimeError("SPOTIPY_CLIENT_ID and SPOTIPY_CLIENT_SECRET must be set in environment variables.")
 
 # Spotify OAuth setup
 sp_oauth = SpotifyOAuth(
@@ -44,167 +10,139 @@ sp_oauth = SpotifyOAuth(
     scope="playlist-read-private user-library-read"
 )
 
-
 @app.get("/")
-def read_root():
-    return FileResponse("ui/index.html")
-
+async def root():
+    return {"message": "Hello World"}
 
 @app.get("/auth")
-def auth_spotify():
-    """Start Spotify authentication."""
-    auth_url = sp_oauth.get_authorize_url()
-    return RedirectResponse(auth_url)
+async def auth():
+    """
+    Authenticate with Spotify.
+    """
+    try:
+        auth_url = sp_oauth.get_authorize_url()
+        return RedirectResponse(auth_url)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/callback")
-def callback(code: str):
-    """Finish Spotify authentication."""
-    token_info = sp_oauth.get_access_token(code)
-    return RedirectResponse("/")
+async def callback():
+    """
+    Callback for Spotify authentication.
+    """
+    try:
+        token_info = sp_oauth.get_access_token(code)
+        return RedirectResponse("/")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/download/all")
+async def download_all():
+    """
+    Download all songs.
+    """
+    try:
+        # Logic to download all songs
+        return {"status": "success", "message": "All songs downloaded"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/playlists")
-def get_playlists():
-    """Get the list of playlists and their tracks."""
-    sp = get_spotify_client()
-    data = []
-    user_playlists = sp.current_user_playlists()
-    for playlist in user_playlists["items"]:
-        tracks = sp.playlist_tracks(playlist['id'])
-        data.append({
-            "name": playlist['name'],
-            "image": playlist['images'][0]['url'],
-            "tracks": [
-                {
-                    "id": track['track']['id'],
-                    "url": track['track']['external_urls']['spotify'],
-                    "image": track['track']['album']['images'][0]['url'],
-                    "name": track['track']['name'],
-                    "artist": track['track']['artists'][0]['name'],
-                    "album": track['track']['album']['name'],
-                    "isSynced": os.path.exists(f"{DATA_DIR}/{playlist['name']}/{track['track']['name']}"),
-                    "isDownloaded": os.path.exists(f"{PLAYLISTS_DIR}/{playlist['name']}/{track['track']['name']}.mp3")
-                }
-                for track in tracks['items']
-            ]
-        })
-    return data
+@app.get("/download/playlist/{playlist_name}")
+async def download_playlist(playlist_name: str):
+    """
+    Download all songs in a specific playlist.
+    """
+    try:
+        # Logic to download playlist
+        return {"status": "success", "message": f"Playlist {playlist_name} downloaded"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/download/track/{track_name}")
+async def download_track(track_name: str):
+    """
+    Download a specific track.
+    """
+    try:
+        # Logic to download track
+        return {"status": "success", "message": f"Track {track_name} downloaded"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-def save_track_data(track, track_dir, sp):
-    """Save track metadata, features, and album art."""
-    track_info_file = f"{track_dir}/info.json"
-    if not os.path.exists(track_info_file):
-        song_info = sp.track(track['track']['id'])
-        with open(track_info_file, 'w') as f:
-            json.dump(song_info, f)
+@app.get("/status")
+async def status():
+    """
+    Get the status of all downloads.
+    """
+    try:
+        # Logic to get status
+        return {"status": "success", "message": "Status retrieved"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    track_features_file = f"{track_dir}/features.json"
-    if not os.path.exists(track_features_file):
-        features = sp.audio_features(track['track']['id'])
-        with open(track_features_file, 'w') as f:
-            json.dump(features, f)
+@app.get("/status/{playlist_name}")
+async def status_playlist(playlist_name: str):
+    """
+    Get the status of downloads for a specific playlist.
+    """
+    try:
+        # Logic to get playlist status
+        return {"status": "success", "message": f"Status of playlist {playlist_name} retrieved"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    track_image_file = f"{track_dir}/image.jpg"
-    if not os.path.exists(track_image_file):
-        image_url = track['track']['album']['images'][0]['url']
-        with open(track_image_file, 'wb') as image_f:
-            image_f.write(urllib.request.urlopen(image_url).read())
-
-def process_playlist(sp, playlist, playlist_dir):
-    """Process playlist tracks and save them locally."""
-    tracks = sp.playlist_tracks(playlist['id'])
-    with open(f"{playlist_dir}/tracks.json", 'w') as playlist_file:
-        json.dump(tracks, playlist_file)
-
-    for track in tracks['items']:
-        track_itm = track.get('track', {}) if track else None
-        track_name = track_itm.get('name') if track_itm else None
-        if not track_name:
-            logger.info(f"Skipping track with no name.")
-            continue
-
-        track_dir = f"{playlist_dir}/{track_name}"
-        if os.path.exists(track_dir):
-            logger.info(f"Skipping track {track_name}, already processed.")
-            continue
-
-        os.makedirs(track_dir, exist_ok=True)
-        logger.info(f"Processing track {track_name}...")
-        save_track_data(track, track_dir, sp)
-
+@app.get("/search")
+async def search(query: str):
+    """
+    Search for songs, playlists, or artists.
+    """
+    try:
+        # Logic to search
+        return {"status": "success", "message": f"Search results for {query}"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/sync")
-def sync_spotify_data():
-    """Synchronize playlists and saved songs from Spotify."""
+async def sync():
+    """
+    Sync all playlists.
+    """
     try:
-        sp = get_spotify_client()
-        
-        if not os.path.exists(DATA_DIR):
-            os.makedirs(DATA_DIR, exist_ok=True)
-
-        # Process playlists
-        user_playlists = sp.current_user_playlists()
-        for playlist in user_playlists["items"]:
-            playlist_name = playlist['name']
-            playlist_dir = f"{DATA_DIR}/{playlist_name}"
-
-            if os.path.exists(playlist_dir):
-                logger.info(f"Skipping playlist {playlist_name}, already processed.")
-                continue
-
-            os.makedirs(playlist_dir, exist_ok=True)
-            logger.info(f"Processing playlist {playlist_name}...")
-            process_playlist(sp, playlist, playlist_dir)
-            time.sleep(1)
-
-        # Process liked songs
-        liked_songs_dir = f"{DATA_DIR}/liked_songs"
-        os.makedirs(liked_songs_dir, exist_ok=True)
-        
-        liked_songs = sp.current_user_saved_tracks()
-        for song in liked_songs['items']:
-            track_name = song['track']['name']
-            track_dir = f"{liked_songs_dir}/{track_name}"
-
-            if os.path.exists(track_dir):
-                logger.info(f"Skipping liked song {track_name}, already processed.")
-                continue
-
-            os.makedirs(track_dir, exist_ok=True)
-            logger.info(f"Processing liked song {track_name}...")
-            save_track_data(song, track_dir, sp)
-            time.sleep(1)
-
-        logger.info("Sync completed successfully.")
-        return {"message": "Sync completed successfully."}
-
+        # Logic to sync all playlists
+        return {"status": "success", "message": "All playlists synced"}
     except Exception as e:
-        logger.error(f"Error during Spotify sync: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error during Spotify sync: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-
-@app.get("/download")
-async def download_all(background_tasks: BackgroundTasks):
-    """Start downloading all tracks from YouTube based on local data."""
+@app.get("/sync/{playlist_name}")
+async def sync_playlist(playlist_name: str):
+    """
+    Sync a specific playlist.
+    """
     try:
-        downloader = YouTubeDownloader(DATA_DIR, active_connections)
-        background_tasks.add_task(downloader.downloadAll)
-        return {"message": "Downloading started."}
+        # Logic to sync playlist
+        return {"status": "success", "message": f"Playlist {playlist_name} synced"}
     except Exception as e:
-        logger.error(f"Error during download: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error during download: {str(e)}")
-    
-@app.websocket("/ws/download")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    active_connections.append(websocket)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/playlists")
+async def playlists():
+    """
+    Get a list of all playlists.
+    """
     try:
-        while True:
-            data = await websocket.receive_text()
-            if data == "close":
-                await websocket.close()
-                break
-    except WebSocketDisconnect:
-        active_connections.remove(websocket)
-        await websocket.close()
+        # Logic to get playlists
+        return {"status": "success", "message": "Playlists retrieved"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/playlist/{playlist_name}")
+async def playlist(playlist_name: str):
+    """
+    Get details of a specific playlist.
+    """
+    try:
+        # Logic to get playlist details
+        return {"status": "success", "message": f"Details of playlist {playlist_name} retrieved"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+

@@ -26,6 +26,11 @@ TESTING = os.getenv('TESTING', False)
 devmode = os.getenv('DEV', False)
 REDIRECT_URI = os.getenv('REDIRECT_URI', 'https://spotify-sync.ditto.rlab.uk/callback')
 
+def check_env():
+    assert client_id, "SPOTIPY_CLIENT_ID is not set"
+    assert client_secret, "SPOTIPY_CLIENT_SECRET is not set"
+    assert REDIRECT_URI, "REDIRECT_URI is not set"
+
 def auth(server_class=http.server.HTTPServer, handler_class=OAuthHandler):
     server_address = (HOST, PORT)
     httpd = server_class(server_address, handler_class)
