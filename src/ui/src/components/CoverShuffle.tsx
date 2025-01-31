@@ -100,7 +100,7 @@ const CoverShuffle: React.FC<{ playlistId: string }> = ({ playlistId }) => {
     }, [covers.length, isAnimating]);
 
     return (
-        <div className="w-11/12 mx-auto mt-8 h-screen">
+        <div className="w-11/12 mx-auto mt-8 h-11/12">
             <div className="relative flex items-center justify-center w-3/4 mx-auto h-1/2"
                  ref={containerRef}
                  style={{
@@ -120,17 +120,17 @@ const CoverShuffle: React.FC<{ playlistId: string }> = ({ playlistId }) => {
                         const isSelected = index === selectedIndex;
                         const zOffset = Math.abs(offset) * 100;
                         
-                        const xTransform = offset * 200;
+                        const xTransform = offset * 150;
                         const zTransform = isSelected ? 200 : -zOffset;
-                        const yRotation = offset * (offset > 0 ? -70 : 70);
-                        const scale = isSelected ? 1 : 0.7;
+                        const yRotation = offset * (offset > 0 ? -10 : -10);
+                        const scale = isSelected ? 1 : 0.9;
                         const opacity = Math.max(0.2, 1 - Math.abs(offset) * 0.3);
 
                         return (
                             <div
                                 key={cover.id}
                                 className={`absolute cursor-pointer transform-gpu 
-                                          transition-all duration-300 ease-out
+                                          transition-all duration-300 ease-out 
                                           ${isAnimating ? 'duration-700' : 'duration-300'}`}
                                 style={{
                                     width: '300px',
@@ -146,7 +146,6 @@ const CoverShuffle: React.FC<{ playlistId: string }> = ({ playlistId }) => {
                                     `,
                                     transformStyle: 'preserve-3d',
                                     zIndex: isSelected ? 10 : 10 - Math.abs(offset),
-                                    opacity
                                 }}
                                 onClick={() => {
                                     if (!isAnimating && !isSelected) {
@@ -159,16 +158,19 @@ const CoverShuffle: React.FC<{ playlistId: string }> = ({ playlistId }) => {
                                 <div className="relative w-full h-full group">
                                     {/* Main image with enhanced hover effects */}
                                     <div className="w-full h-full transition-transform duration-500 ease-out 
-                                                transform-gpu group-hover:scale-105">
+                                                transform-gpu group-hover:scale-105 bg-gray-900
+                                                rounded-2xl shadow-2xl overflow-hidden
+                                                ">
                                         <img
                                             src={cover.coverUrl}
                                             alt={cover.name}
                                             className="w-full h-full object-cover rounded-2xl shadow-2xl
-                                                     transition-shadow duration-500 ease-out
+                                                     transition-shadow duration-500 ease-out opacity-100
                                                      group-hover:shadow-xl group-hover:shadow-black/30"
                                             style={{
                                                 backfaceVisibility: 'hidden',
-                                                WebkitBackfaceVisibility: 'hidden'
+                                                WebkitBackfaceVisibility: 'hidden',
+                                                opacity: opacity,
                                             }}
                                         />
                                     </div>
@@ -176,9 +178,12 @@ const CoverShuffle: React.FC<{ playlistId: string }> = ({ playlistId }) => {
                                     {/* Enhanced reflection effect */}
                                     <div 
                                         className="absolute top-full left-0 w-full h-full 
-                                                 transform-gpu origin-top opacity-10
+                                                 transform-gpu origin-top
                                                  transition-all duration-700 ease-out
                                                  group-hover:translate-y-6"
+                                        style={{
+                                            opacity: opacity * 0.1,
+                                        }}
                                     >
                                         <img
                                             src={cover.coverUrl}
@@ -210,7 +215,7 @@ const CoverShuffle: React.FC<{ playlistId: string }> = ({ playlistId }) => {
                 </div>
 
                 {/* Enhanced navigation controls */}
-                <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 z-50">
+                <div className="absolute -bottom-20 left-1/2 transform -translate-x-1/2 flex gap-4 z-50">
                     <button
                         onClick={() => {
                             if (!isAnimating && selectedIndex > 0) {
