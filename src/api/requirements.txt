@@ -4,3 +4,4 @@ uvicorn
 python-dotenv
 yt_dlp
 mutagen
+aiofiles
